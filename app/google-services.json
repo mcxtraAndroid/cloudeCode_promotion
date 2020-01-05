@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "960823538746",
+    "firebase_url": "https://promotion-uniquire.firebaseio.com",
+    "project_id": "promotion-uniquire",
+    "storage_bucket": "promotion-uniquire.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:960823538746:android:2b53427074055a9b493103",
+        "android_client_info": {
+          "package_name": "com.cloudcode.PromotionUniquier"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "960823538746-du84obnkdhkh09da1ijera48ci8eor01.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIqXUIHSGP_pTtSmqx-rm4TaeaGW7ZfVM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "960823538746-du84obnkdhkh09da1ijera48ci8eor01.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
