@@ -20,6 +20,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -47,18 +49,18 @@ public class MainActivity extends AppCompatActivity {
     private WebView mywebview;
     private BroadcastReceiver broadcastReceiver;
     String url = "http://pu.mycit.co.in/server/login.php";
-    String val= "";
+  //  String url = "http://pu.mycit.co.in/server/index.php";
+
+
+    String val = "";
     AppController appController;
-    private static final String PDF_EXTENSION = ".pdf";
 
-    private boolean isLoadingPdfUrl;
-    private static final String PDF_VIEWER_URL = "http://docs.google.com/gview?embedded=true&url=";
+    private ValueCallback<Uri> mUploadMessage;
+    public ValueCallback<Uri[]> uploadMessage;
+    public static final int REQUEST_SELECT_FILE = 100;
+    private final static int FILECHOOSER_RESULTCODE = 1;
 
-
-    private static final int CLICK_ON_WEBVIEW = 1;
-    private static final int CLICK_ON_URL = 2;
-
-  //  private final Handler handler = new Handler(this);
+    //  private final Handler handler = new Handler(this);
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,51 +77,36 @@ public class MainActivity extends AppCompatActivity {
         CookieSyncManager.createInstance(this);
         CookieSyncManager.getInstance().startSync();
 
-       mywebview.loadUrl(url);
-String pdf ="http://pu.mycit.co.in/server/pdffiles/1578035950PurchaseOrder.pdf";
-     //   mywebview.loadUrl("https://docs.google.com/gview?embedded=true&url=" + pdf);
+        mywebview.loadUrl(url);
+
+        mywebview.setWebViewClient(new WebViewClient() {
 
 
-        mywebview.setWebViewClient(new WebViewClient(){
-
-
-          /*  @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                super.onPageStarted(view, url, favicon);
-
-
-
-            }*/
-
-           @Override
+            @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
 
-                if  (url.endsWith(".pdf")){
+                if (url.endsWith(".pdf")) {
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setDataAndType(Uri.parse(url), "application/pdf");
-                    try{
+                    try {
                         view.getContext().startActivity(intent);
                     } catch (ActivityNotFoundException e) {
                         //user does not have a pdf viewer installed
                     }
                 } else {
-                  //  mywebview.loadUrl(url);
+                    //  mywebview.loadUrl(url);
 
-                //    view.loadUrl(url);
+                    //    view.loadUrl(url);
                     CookieSyncManager cookieSyncManager = CookieSyncManager.createInstance(view.getContext());
                     cookieSyncManager.startSync();
                     CookieManager cookieManager = CookieManager.getInstance();
                     cookieManager.setAcceptCookie(true);
-                 //   cookieManager.removeSessionCookie();
-                 //   cookieManager.setCookie(url, COOKIE);
+                    //   cookieManager.removeSessionCookie();
+                    //   cookieManager.setCookie(url, COOKIE);
                     cookieSyncManager.sync();
 
                     mywebview.getSettings().setJavaScriptEnabled(true);
                     mywebview.loadUrl(url);
-
-
-
-
 
 
                 }
@@ -137,7 +124,7 @@ String pdf ="http://pu.mycit.co.in/server/pdffiles/1578035950PurchaseOrder.pdf";
                 Log.d("", "All the cookies in a string:" + cookies);
 
                 if (cookies == null) {
-                    return ;
+                    return;
                 } else {
 
                     Map<String, String> map = new HashMap<>();
@@ -176,68 +163,126 @@ String pdf ="http://pu.mycit.co.in/server/pdffiles/1578035950PurchaseOrder.pdf";
                 }
 
 
-                }
+            }
 
         });
 
+        mywebview.setWebChromeClient(new WebChromeClient()
+        {
+            // For 3.0+ Devices (Start)
+            // onActivityResult attached before constructor
+            protected void openFileChooser(ValueCallback uploadMsg, String acceptType)
+            {
+                mUploadMessage = uploadMsg;
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("image/*");
+                startActivityForResult(Intent.createChooser(i, "File Browser"), FILECHOOSER_RESULTCODE);
+            }
+
+
+            // For Lollipop 5.0+ Devices
+            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+            public boolean onShowFileChooser(WebView mWebView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams)
+            {
+                if (uploadMessage != null) {
+                    uploadMessage.onReceiveValue(null);
+                    uploadMessage = null;
+                }
+
+                uploadMessage = filePathCallback;
+
+                Intent intent = fileChooserParams.createIntent();
+                try
+                {
+                    startActivityForResult(intent, REQUEST_SELECT_FILE);
+                } catch (ActivityNotFoundException e)
+                {
+                    uploadMessage = null;
+                    Toast.makeText(getApplicationContext(), "Cannot Open File Chooser", Toast.LENGTH_LONG).show();
+                    return false;
+                }
+                return true;
+            }
+
+            //For Android 4.1 only
+            protected void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture)
+            {
+                mUploadMessage = uploadMsg;
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("image/*");
+                startActivityForResult(Intent.createChooser(intent, "File Browser"), FILECHOOSER_RESULTCODE);
+            }
+
+            protected void openFileChooser(ValueCallback<Uri> uploadMsg)
+            {
+                mUploadMessage = uploadMsg;
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("image/*");
+                startActivityForResult(Intent.createChooser(i, "File Chooser"), FILECHOOSER_RESULTCODE);
+            }
+        });
+
+
     }
 
-
-    private void postLogin (String username, String password ,String token)
-    {
-        Log.e("", "postLogin: "+token );
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (requestCode == REQUEST_SELECT_FILE) {
+                if (uploadMessage == null)
+                    return;
+                uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
+                uploadMessage = null;
+            }
+        } else if (requestCode == FILECHOOSER_RESULTCODE) {
+            if (null == mUploadMessage)
+                return;
+            // Use MainActivity.RESULT_OK if you're implementing WebView inside Fragment
+            // Use RESULT_OK only if you're implementing WebView inside an Activity
+            Uri result = intent == null || resultCode != MainActivity.RESULT_OK ? null : intent.getData();
+            mUploadMessage.onReceiveValue(result);
+            mUploadMessage = null;
+        } else
+            Toast.makeText(getApplicationContext(), "Failed to Upload Image", Toast.LENGTH_LONG).show();
+    }
+    private void postLogin(String username, String password, String token) {
+        Log.e("", "postLogin: " + token);
         AppController app = AppController.getInstance();
 
         Login_Model_ apiservices = app.getClient().create(Login_Model_.class);
-        Call<LoginResponse> call = apiservices.post_Login( username, password,token);
+        Call<LoginResponse> call = apiservices.post_Login(username, password, token);
 
         call.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 if (response.body().getStatus()) {
-                    Log.e("", "dhana: "+response.body().getMessage());
+                    Log.e("", "dhana: " + response.body().getMessage());
                 }
             }
 
             @Override
             public void onFailure(Call<LoginResponse> call, Throwable t) {
-                Log.e("", "onFailure: "+t);
+                Log.e("", "onFailure: " + t);
             }
         });
     }
 
 
 
-    public void loadPdfUrl(String url)
-    {
-        mywebview.stopLoading();
-
-        if (!TextUtils.isEmpty(url))
+    @Override
+    public void onBackPressed(){
+        if(mywebview.canGoBack()) {
+            mywebview.goBack();
+        } else
         {
-            isLoadingPdfUrl = isPdfUrl(url);
-            if (isLoadingPdfUrl)
-            {
-                mywebview.clearHistory();
-            }
-
-          //  showProgressDialog();
+            super.onBackPressed();
         }
-
-        mywebview.loadUrl(url);
-    }
-
-
-    private boolean isPdfUrl(String url)
-    {
-        if (!TextUtils.isEmpty(url))
-        {
-            url = url.trim();
-            int lastIndex = url.toLowerCase().lastIndexOf(PDF_EXTENSION);
-            if (lastIndex != -1)
-            {
-                return url.substring(lastIndex).equalsIgnoreCase(PDF_EXTENSION);
-            }
-        }
-        return false;
     }
 }
+
+
+
